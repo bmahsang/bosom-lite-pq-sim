@@ -245,7 +245,7 @@
   <h3>시나리오별 세부 비교</h3>
   <table>
     <thead>
-      <tr><th>항목</th><th>현재<br>(인상 전)</th><th>원가 인상<br>가격 미조정</th><th>S1<br>+700원</th><th>S2<br>+1,200원</th><th>S3<br>+2,000원</th></tr>
+      <tr><th>항목</th><th>현재<br>(인상 전)</th><th>원가 인상<br>가격 미조정</th><th>S1<br>+1,000원</th><th>S2<br>+1,500원</th><th>S3<br>+2,000원</th></tr>
     </thead>
     <tbody id="sc-tbody"></tbody>
   </table>
@@ -270,12 +270,12 @@
   <h2>6. SKU별 시나리오 가격 &amp; 타사 한계선</h2>
   <table>
     <thead>
-      <tr><th>구분</th><th>현재 판매가</th><th>S1 (+700)</th><th>S2 (+1,200)</th><th>S3 (+2,000)</th><th>타사 최고가 한계</th><th>판단</th></tr>
+      <tr><th>구분</th><th>현재 판매가</th><th>S1 (+1,000)</th><th>S2 (+1,500)</th><th>S3 (+2,000)</th><th>타사 최고가 한계</th><th>판단</th></tr>
     </thead>
     <tbody>
-      <tr><td>대형 단품</td><td>12,500</td><td>13,200</td><td>13,700</td><td>14,500</td><td>14,500~14,900</td><td><span class="badge badge-green">S3까지 안전</span></td></tr>
+      <tr><td>대형 단품</td><td>12,500</td><td>13,500</td><td>14,000</td><td>14,500</td><td>14,500~14,900</td><td><span class="badge badge-green">S3까지 안전</span></td></tr>
       <tr><td>대형 4팩</td><td>42,900</td><td id="sku-l4-s1">--</td><td id="sku-l4-s2">--</td><td id="sku-l4-s3">--</td><td>--</td><td>--</td></tr>
-      <tr><td>표준형 단품</td><td>13,500</td><td>14,200</td><td>14,700</td><td>15,500</td><td>15,500~15,900</td><td><span class="badge badge-green">S3까지 안전</span></td></tr>
+      <tr><td>표준형 단품</td><td>13,500</td><td>14,500</td><td>15,000</td><td>15,500</td><td>15,500~15,900</td><td><span class="badge badge-green">S3까지 안전</span></td></tr>
       <tr><td>표준형 4팩</td><td>45,900</td><td id="sku-s4-s1">--</td><td id="sku-s4-s2">--</td><td id="sku-s4-s3">--</td><td>--</td><td>--</td></tr>
     </tbody>
   </table>
@@ -616,8 +616,8 @@ function update() {
   document.getElementById('sc-conv').textContent = (convRate * 100).toFixed(0);
 
   const scs = [
-    { name: 'S1: 소폭 인상', p: 700, desc: '최소 인상' },
-    { name: 'S2: 중간 인상', p: 1200, desc: '중간 수준' },
+    { name: 'S1: 소폭 인상', p: 1000, desc: '적자 축소' },
+    { name: 'S2: 손익분기', p: 1500, desc: '손익분기 도달' },
     { name: 'S3: 최대 인상', p: 2000, desc: '타사 한계선 도달' },
   ];
 
@@ -648,8 +648,8 @@ function update() {
   const cols = [
     { l: '현재(인상 전)', p: 0, cur: true },
     { l: '가격 미조정', p: 0, cur: false },
-    { l: 'S1 +700', p: 700, cur: false },
-    { l: 'S2 +1,200', p: 1200, cur: false },
+    { l: 'S1 +1,000', p: 1000, cur: false },
+    { l: 'S2 +1,500', p: 1500, cur: false },
     { l: 'S3 +2,000', p: 2000, cur: false },
   ];
   const getCM = (c) => {
@@ -676,7 +676,7 @@ function update() {
   // === Section 5: Sensitivity ===
   document.getElementById('mx-var').textContent = (varRate * 100).toFixed(0);
   document.getElementById('mx-conv').textContent = (convRate * 100).toFixed(0);
-  const pSteps = [0, 500, 700, 1000, 1200, 1500, 2000];
+  const pSteps = [0, 500, 1000, 1200, 1500, 1800, 2000];
   const vSteps = [100, 95, 90, 85, 80, 75, 70, 60, 50];
   document.getElementById('mx-tbody').innerHTML = pSteps.map(p => {
     const ep = effectivePrice(p, SP, SD);
@@ -694,7 +694,7 @@ function update() {
   }).join('');
 
   // === Section 6: SKU 4-pack ===
-  [700, 1200, 2000].forEach((s, i) => {
+  [1000, 1500, 2000].forEach((s, i) => {
     const lp = Math.round((12500 + s) * 4 * (1 - SD) / 100) * 100;
     const sp = Math.round((13500 + s) * 4 * (1 - SD) / 100) * 100;
     document.getElementById('sku-l4-s' + (i + 1)).textContent = fmt(lp);
@@ -705,7 +705,7 @@ function update() {
   const s3cm = calcCM(B.revPerUnit + effectivePrice(2000, SP, SD) * convRate, newCogs, varRate);
   const s3_85 = s3cm * B.avgVol * 0.85;
   const s3_50 = s3cm * B.avgVol * 0.50;
-  const s2cm = calcCM(B.revPerUnit + effectivePrice(1200, SP, SD) * convRate, newCogs, varRate);
+  const s2cm = calcCM(B.revPerUnit + effectivePrice(1500, SP, SD) * convRate, newCogs, varRate);
   const s2_85 = s2cm * B.avgVol * 0.85;
 
   let recHTML = '';
