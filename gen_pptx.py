@@ -51,7 +51,7 @@ def add_rect(slide, left, top, width, height, fill_color, border_color=None):
 def add_footer(slide, text="BITE ME · PRICING SIMULATION", page_num=None):
     add_text(slide, 0.6, 6.9, 4, 0.4, text, size=8, color=GRAY)
     if page_num:
-        add_text(slide, 11.5, 0.2, 1.5, 0.3, f"{page_num} / 9", size=9, color=GRAY, align=PP_ALIGN.RIGHT)
+        add_text(slide, 11.5, 0.2, 1.5, 0.3, f"{page_num} / 10", size=9, color=GRAY, align=PP_ALIGN.RIGHT)
 
 def add_section_indicator(slide, label):
     add_rect(slide, 0.6, 0.5, 0.06, 0.3, GOLD)
@@ -348,12 +348,43 @@ add_takeaway(slide, 6.15, "KEY INSIGHT", [
 ])
 
 
-# ========== PAGE 9: RECOMMENDATION ==========
+# ========== PAGE 9: SET PLAY BEP BY PRICE ==========
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, CREAM)
+add_section_indicator(slide, "S E T   P L A Y   B E P   B Y   P R I C E")
+add_text(slide, 0.6, 0.9, 12, 0.5, "인상분별 세트 BEP 할인율 비교", size=22, color=NAVY, bold=True)
+add_footer(slide, page_num=9)
+
+add_text(slide, 0.6, 1.45, 12, 0.25, "인상폭이 낮으면 앵커가가 낮아져 세트 BEP 할인율이 급격히 하락 — +2,000원(S3)에서만 14% 할인 유지 가능", size=9, color=GRAY)
+
+add_text(slide, 0.6, 1.8, 5, 0.3, "인상분 → 세트 할인율 손익분기점", size=13, color=NAVY, bold=True)
+add_table(slide, 0.6, 2.15, 12.1,
+    ["인상분", "가중평균 단품가", "세트 BEP 할인율", "14% 할인 시 CM/개", "14% 할인 월간CM", "판정"],
+    [
+        ["+1,000원 (S1)", "13,915원", "8.3%", "-387원", "-262만", "14% 할인 불가"],
+        ["+1,200원", "14,115원", "9.6%", "-303원", "-205만", "14% 할인 불가"],
+        ["+1,400원 (BEP)", "14,315원", "10.9%", "-219원", "-148만", "14% 할인 불가"],
+        ["+1,500원 (S2)", "14,415원", "11.5%", "-176원", "-119만", "14% 할인 불가"],
+        ["+1,800원", "14,715원", "13.3%", "-50원", "-34만", "14% 할인 근접"],
+        ["+2,000원 (S3)", "14,915원", "14.5%", "+34원", "+23만", "14% 할인 가능"],
+    ])
+
+add_kpi_card(slide, 0.6, 4.6, 3.6, "S2(+1,500) BEP 할인율", "11.5%", "14% 할인 시 적자 -176원/개", RED, RED)
+add_kpi_card(slide, 4.5, 4.6, 3.6, "S3(+2,000) BEP 할인율", "14.5%", "14% 할인 시 흑자 +34원/개", GOLD, GOLD)
+add_kpi_card(slide, 8.4, 4.6, 3.6, "S3 + 할인율 12%", "+180원/개", "안정적 마진 확보", GREEN, GREEN)
+
+add_takeaway(slide, 5.8, "KEY INSIGHT", [
+    "+2,000원(S3)에서만 14% 할인 가능. S2(+1,500)는 할인율 11% 이하 필요 → 세트 메리트 약화.",
+    "앵커가가 높아야 할인율 여유가 생기고, 세트 플레이가 성립합니다.",
+])
+
+
+# ========== PAGE 10: RECOMMENDATION ==========
 slide = prs.slides.add_slide(prs.slide_layouts[6])
 add_bg(slide, CREAM)
 add_section_indicator(slide, "R E C O M M E N D A T I O N")
 add_text(slide, 0.6, 0.9, 10, 0.5, "권장안 & Next Steps", size=22, color=NAVY, bold=True)
-add_footer(slide, page_num=9)
+add_footer(slide, page_num=10)
 
 add_takeaway(slide, 1.5, "RECOMMENDATION", [
     "S3: 단품 +2,000원 앵커가 + 세트 플레이 전략",
