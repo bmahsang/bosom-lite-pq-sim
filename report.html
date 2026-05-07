@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보솜 라이트 프라이싱 시뮬레이션 보고서</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
+    background: #F5F0E8;
+    color: #2A3142;
+    line-height: 1.6;
+  }
+
+  /* Colors */
+  :root {
+    --navy: #2A3142;
+    --gold: #C5A55A;
+    --cream: #F5F0E8;
+    --white: #FFFFFF;
+    --gray: #6B7280;
+    --light-gray: #E8E3DA;
+    --red: #DC4545;
+    --green: #2D8A4E;
+    --blue: #3B7DD8;
+  }
+
+  /* Page system */
+  .page {
+    width: 960px;
+    min-height: 540px;
+    margin: 24px auto;
+    background: var(--cream);
+    border-radius: 4px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    position: relative;
+    padding: 48px 56px 40px;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  /* Cover */
+  .page-cover {
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 72px;
+  }
+  .page-cover::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: var(--gold);
+  }
+  .cover-label {
+    color: var(--gold);
+    font-size: 12px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .cover-title {
+    color: var(--white);
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1.3;
+    margin-bottom: 12px;
+  }
+  .cover-sub {
+    color: rgba(255,255,255,0.6);
+    font-size: 16px;
+    font-weight: 400;
+    margin-bottom: 48px;
+  }
+  .cover-meta {
+    color: rgba(255,255,255,0.4);
+    font-size: 13px;
+  }
+
+  /* Section indicator */
+  .section-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .section-indicator .block {
+    width: 4px;
+    height: 20px;
+    background: var(--gold);
+    border-radius: 1px;
+  }
+  .section-indicator .label {
+    font-size: 11px;
+    letter-spacing: 5px;
+    color: var(--gray);
+    text-transform: uppercase;
+  }
+
+  /* Typography */
+  h2 {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+  h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 12px;
+  }
+
+  /* Footer */
+  .page-footer {
+    position: absolute;
+    bottom: 16px;
+    left: 56px;
+    font-size: 10px;
+    color: var(--gray);
+    opacity: 0.5;
+  }
+  .page-num {
+    position: absolute;
+    top: 20px;
+    right: 56px;
+    font-size: 11px;
+    color: var(--gray);
+  }
+
+  /* KPI cards */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .kpi-row.col3 { grid-template-columns: repeat(3, 1fr); }
+  .kpi-card {
+    background: var(--white);
+    border-radius: 8px;
+    padding: 16px;
+    border-left: 3px solid var(--gold);
+  }
+  .kpi-card.red { border-left-color: var(--red); }
+  .kpi-card.green { border-left-color: var(--green); }
+  .kpi-card.blue { border-left-color: var(--blue); }
+  .kpi-card .kpi-label {
+    font-size: 11px;
+    color: var(--gray);
+    margin-bottom: 4px;
+  }
+  .kpi-card .kpi-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+  .kpi-card .kpi-value.gold { color: var(--gold); }
+  .kpi-card .kpi-value.red { color: var(--red); }
+  .kpi-card .kpi-value.green { color: var(--green); }
+  .kpi-card .kpi-sub {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 2px;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin: 12px 0;
+  }
+  th {
+    background: var(--navy);
+    color: var(--white);
+    padding: 8px 10px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 11px;
+  }
+  th:first-child { text-align: left; border-radius: 4px 0 0 0; }
+  th:last-child { border-radius: 0 4px 0 0; }
+  td {
+    padding: 8px 10px;
+    text-align: right;
+    border-bottom: 1px solid var(--light-gray);
+    background: var(--white);
+  }
+  td:first-child { text-align: left; font-weight: 600; }
+  .neg { color: var(--red); font-weight: 700; }
+  .pos { color: var(--green); font-weight: 700; }
+  .gold-text { color: var(--gold); font-weight: 700; }
+  .highlight-row td { background: #FFF9E6; }
+
+  /* Key takeaway box */
+  .takeaway {
+    background: var(--navy);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    position: relative;
+  }
+  .takeaway::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gold);
+    border-radius: 8px 8px 0 0;
+  }
+  .takeaway .tk-title {
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+  .takeaway .tk-body {
+    color: var(--white);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .takeaway .tk-body strong { color: var(--gold); }
+
+  /* Scenario cards */
+  .scenario-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 16px 0;
+  }
+  .sc-card {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    border: 2px solid var(--light-gray);
+  }
+  .sc-card.best {
+    border-color: var(--gold);
+    background: #FFFDF5;
+  }
+  .sc-card .sc-tag {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+  .sc-card .sc-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray);
+    margin-bottom: 6px;
+  }
+  .sc-card .sc-price {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+  .sc-card .sc-detail {
+    font-size: 11px;
+    color: var(--gray);
+    margin: 4px 0;
+  }
+  .sc-card .sc-result {
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 10px;
+  }
+
+  /* Matrix */
+  .matrix-pos { background: #E8F5E9 !important; }
+  .matrix-neg { background: #FFEBEE !important; }
+  .matrix-be { background: #FFF9C4 !important; font-weight: 700; }
+
+  /* Note box */
+  .note-box {
+    background: var(--white);
+    border-left: 3px solid var(--gold);
+    padding: 14px 18px;
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #555;
+    margin: 12px 0;
+  }
+
+  /* Two column */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  /* Bullet list */
+  .bullet-list {
+    list-style: none;
+    padding: 0;
+  }
+  .bullet-list li {
+    font-size: 13px;
+    line-height: 1.8;
+    padding-left: 16px;
+    position: relative;
+  }
+  .bullet-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+  }
+
+  /* Badge */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .badge-green { background: #E8F5E9; color: var(--green); }
+  .badge-red { background: #FFEBEE; color: var(--red); }
+  .badge-gold { background: #FFF3D0; color: #8B6914; }
+
+  .divider { height: 1px; background: var(--light-gray); margin: 16px 0; }
+
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; margin: 0; page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: COVER -->
+<div class="page page-cover">
+  <div class="cover-label">P R I C I N G &nbsp; S I M U L A T I O N</div>
+  <div class="cover-title">보솜 라이트<br>원가 인상 대응 PQ 시뮬레이션</div>
+  <div class="cover-sub">가격-물량 시나리오 분석 및 프라이싱 권장안</div>
+  <div class="cover-meta">2026.05 | BITE ME Brand Team</div>
+  <div class="page-footer" style="color:rgba(255,255,255,0.3);">BITE ME &middot; PRICING SIMULATION</div>
+</div>
+
+<!-- PAGE 2: EXECUTIVE SUMMARY -->
+<div class="page">
+  <div class="page-num">2 / 9</div>
+  <div class="section-indicator">
+    <div class="block"></div>
+    <span class="label">E X E C U T I V E &nbsp; S U M M A R Y</span>
+  </div>
+  <h2>핵심 요약</h2>
+
+  <div class="takeaway">
+    <div class="tk-title">KEY TAKEAWAY</div>
+    <div class="tk-body">
+      보솜 라이트는 원가 인상(+6.3~6.9%) 이전부터 <strong>구조적 적자</strong> 상태이며,
+      원가 인상 시 월간 손실이 <strong>-216만원 -> -518만원</strong>으로 확대됩니다.<br>
+      변동비율 30% 기준, <strong>S3(+2,000원) 전면 인상 + 세트 플레이 전략</strong>을 권장합니다.
+      단품을 앵커가(+2,000원)로 설정하여 4팩 세트 전환을 유도하고,
+      100% 세트 전환 시 <strong>손익분기 할인율 14.5%</strong> — 현재 14% 할인 유지 시 흑자 전환이 가능하나 마진이 타이트하므로
+      <strong>변동비 관리(30% 이하)가 핵심</strong>입니다.
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-card red">
+      <div class="kpi-label">현재 단위당 CM</div>
+      <div class="kpi-value red">-271원</div>
+      <div class="kpi-sub">원가 인상 전 기준</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">원가 인상 후 CM</div>
+      <div class="kpi-value red">-650원</div>
+      <div class="kpi-sub">가격 미조정 시</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">손익분기 최소 인상</div>
+      <div class="kpi-value gold">+1,400원</div>
+      <div class="kpi-sub">변동비 30% 기준</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">S3 적용 시 월간 CM</div>
+      <div class="kpi-value green">+223만원</div>
+      <div class="kpi-sub">+2,000원 / 물량 85%</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <h3>권장 액션</h3>
+  <div class="two-col">
+    <ul class="bullet-list">
+      <li><strong>단품 +2,000원 인상</strong> (대형 14,500 / 표준형 15,500)</li>
+      <li><strong>세트 플레이:</strong> 단품 앵커가로 4팩 전환 유도</li>
+      <li>세트 할인율 <strong>14% 이하</strong> 유지 (손익분기 14.5%)</li>
+    </ul>
+    <ul class="bullet-list">
+      <li>인상 후 <strong>2~4주 물량 모니터링</strong></li>
+      <li><strong>변동비 30% 이하 관리</strong> (세트 플레이 성패 좌우)</li>
+      <li>중장기: 대나무/재생펄프 패드로 라이트 교체 검토</li>
+    </ul>
+  </div>
+
+  <div class="page-footer">BITE ME &middot; PRICING SIMULATION</div>
+</div>
+
+<!-- PAGE 3: 배경 & 현황 -->
+<div class="page">
+  <div class="page-num">3 / 9</div>
+  <div class="section-indicator">
+    <div class="block"></div>
+    <span class="label">B A C K G R O U N D</span>
+  </div>
+  <h2>배경: 원가 인상 & 현재 손익 구조</h2>
+
+  <h3>SKU별 원가 인상 현황</h3>
+  <table>
+    <thead>
+      <tr><th>구분</th><th>판매가</th><th>현재 원가</th><th>5월 예상 원가</th><th>인상분</th><th>인상율</th><th>매출총이익(현재)</th><th>매출총이익(인상 후)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>대형 단품</td><td>12,500</td><td>5,523</td><td>5,901</td><td class="neg">+378</td><td>6.9%</td><td class="pos">6,977</td><td class="pos">6,599</td></tr>
+      <tr><td>대형 4팩</td><td>42,900</td><td>22,094</td><td>23,606</td><td class="neg">+1,512</td><td>6.9%</td><td class="pos">20,806</td><td class="pos">19,294</td></tr>
+      <tr><td>표준형 단품</td><td>13,500</td><td>6,061</td><td>6,441</td><td class="neg">+380</td><td>6.3%</td><td class="pos">7,439</td><td class="pos">7,059</td></tr>
+      <tr><td>표준형 4팩</td><td>45,900</td><td>24,246</td><td>25,766</td><td class="neg">+1,520</td><td>6.3%</td><td class="pos">21,654</td><td class="pos">20,134</td></tr>
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+  <h3>2026 Jan-Apr 월별 실적</h3>
+  <table>
+    <thead>
+      <tr><th>월</th><th>출고량</th><th>순매출</th><th>매출원가</th><th>매출총이익</th><th>공헌이익</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1월</td><td>5,284</td><td>5,330만</td><td>3,593만</td><td>1,736만</td><td class="neg">-1.5만</td></tr>
+      <tr><td>2월</td><td>12,922</td><td>7,519만</td><td>5,399만</td><td>2,120만</td><td class="neg">-273만</td></tr>
+      <tr><td>3월</td><td>9,789</td><td>9,190만</td><td>6,495만</td><td>2,695만</td><td class="neg">-57만</td></tr>
+      <tr><td>4월</td><td>3,852</td><td>3,444만</td><td>3,211만</td><td>233만</td><td class="neg">-18만</td></tr>
+      <tr class="highlight-row"><td><strong>월평균</strong></td><td><strong>7,962</strong></td><td><strong>6,371만</strong></td><td><strong>4,675만</strong></td><td><strong>1,696만</strong></td><td class="neg"><strong>-87만</strong></td></tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    매출총이익은 양(+)이지만, 변동비(물류/수수료/프로모션) 차감 후 <strong>매월 적자 구조</strong>가 지속되고 있음.
+    보솜 일반은 25년 하반기 이후 수익 구조 양호하나, 라이트는 지속 적자.
+  </div>
+
+  <div class="page-footer">BITE ME &middot; PRICING SIMULATION</div>
+</div>
+
+<!-- PAGE 4: 시뮬레이션 가정 -->
+<div class="page">
+  <div class="page-num">4 / 9</div>
+  <div class="section-indicator">
+    <div class="block"></div>
+    <span class="label">A S S U M P T I O N S</span>
+  </div>
+  <h2>시뮬레이션 핵심 가정</h2>
+
+  <div class="kpi-row col3">
+    <div class="kpi-card">
+      <div class="kpi-label">변동비율 (순매출 대비)</div>
+      <div class="kpi-value">30%</div>
+      <div class="kpi-sub">물류/수수료/프로모션 등</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">순매출 전환율 (판매가 대비)</div>
+      <div class="kpi-value">70%</div>
+      <div class="kpi-sub">채널 믹스 가중평균</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">월평균 출고량</div>
+      <div class="kpi-value">7,962</div>
+      <div class="kpi-sub">대형 58% / 표준형 42%</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <h3>단위 경제 구조 (개당)</h3>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>금액</th><th>비고</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>순매출</td><td>8,001원</td><td>판매가 대비 ~70%</td></tr>
+      <tr><td>변동비 (30%)</td><td>-2,400원</td><td>물류/수수료/프로모션</td></tr>
+      <tr><td>매출원가 (인상 후)</td><td>-6,251원</td><td>기존 5,872 + 인상분 379</td></tr>
+      <tr class="highlight-row"><td><strong>공헌이익 (CM)</strong></td><td class="neg"><strong>-650원</strong></td><td>가격 미조정 시</td></tr>
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+  <h3>순매출 전환율 70% 산출 근거</h3>
+  <table>
+    <thead>
+      <tr><th>채널</th><th>추정 전환율</th><th>+2,000원 인상 시 순매출 증분</th><th>비고</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>자사몰</td><td>~85-90%</td><td>+1,700~1,800원</td><td>할인/쿠폰/결제수수료</td></tr>
+      <tr><td>쿠팡 (공급가)</td><td>~60%</td><td>+1,200원</td><td>공급가 기준 출고</td></tr>
+      <tr class="highlight-row"><td><strong>가중평균</strong></td><td><strong>~70%</strong></td><td><strong>~+1,400원</strong></td><td>채널 믹스 반영</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    <strong>변동비 비례(%) 구조의 영향:</strong> 가격 인상 시 변동비도 함께 증가하여 인상 효과가 감쇄됨.<br>
+    +1,000원 인상 -> 순매출 +700원 -> 변동비 -210원 -> <strong>실제 CM 개선 +490원</strong> (인상분의 49%만 이익 반영)
+  </div>
+
+  <div class="page-footer">BITE ME &middot; PRICING SIMULATION</div>
+</div>
+
+<!-- PAGE 5: 3대 시나리오 -->
+<div class="page">
+  <div class="page-num">5 / 9</div>
+  <div class="section-indicator">
+    <div class="block"></div>
+    <span class="label">S C E N A R I O &nbsp; A N A L Y S I S</span>
+  </div>
+  <h2>3대 시나리오 비교</h2>
+
+  <div class="scenario-row">
+    <div class="sc-card">
+      <div class="sc-tag">S1</div>
+      <div class="sc-name">소폭 인상</div>
+      <div class="sc-price">+700원</div>
+      <div class="sc-detail">단위 CM: -307원</div>
+      <div class="sc-detail">85% 유지 시</div>
+      <div class="sc-result neg">월 -208만원</div>
+      <div class="sc-detail" style="margin-top:8px;"><span class="badge badge-red">적자 유지</span></div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-tag">S2</div>
+      <div class="sc-name">중간 인상</div>
+      <div class="sc-price">+1,200원</div>
+      <div class="sc-detail">단위 CM: -62원</div>
+      <div class="sc-detail">85% 유지 시</div>
+      <div class="sc-result neg">월 -42만원</div>
+      <div class="sc-detail" style="margin-top:8px;"><span class="badge badge-gold">손익분기 근접</span></div>
+    </div>
+    <div class="sc-card best">
+      <div class="sc-tag">BEST &mdash; S3</div>
+      <div class="sc-name">최대 인상</div>
+      <div class="sc-price">+2,000원</div>
+      <div class="sc-detail">단위 CM: +330원</div>
+      <div class="sc-detail">85% 유지 시</div>
+      <div class="sc-result pos">월 +223만원</div>
+      <div class="sc-detail" style="margin-top:8px;"><span class="badge badge-green">흑자 전환</span></div>
+    </div>
+  </div>
+
+  <h3>시나리오별 세부 비교 (물량 유지율 85%)</h3>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>현재<br>(인상 전)</th><th>원가 인상<br>가격 미조정</th><th>S1<br>+700원</th><th>S2<br>+1,200원</th><th>S3<br>+2,000원</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>순매출/개</td><td>8,001</td><td>8,001</td><td>8,491</td><td>8,841</td><td>9,401</td></tr>
+      <tr><td>변동비/개 (30%)</td><td>2,400</td><td>2,400</td><td>2,547</td><td>2,652</td><td>2,820</td></tr>
+      <tr><td>원가/개</td><td>5,872</td><td>6,251</td><td>6,251</td><td>6,251</td><td>6,251</td></tr>
+      <tr><td>CM/개</td><td class="neg">-271</td><td class="neg">-650</td><td class="neg">-307</td><td class="neg">-62</td><td class="pos">+330</td></tr>
+      <tr><td>월간 물량</td><td>7,962</td><td>7,962</td><td>6,768</td><td>6,768</td><td>6,768</td></tr>
+      <tr><td>월간 CM</td><td class="neg">-216만</td><td class="neg">-518만</td><td class="neg">-208만</td><td class="neg">-42만</td><td class="pos">+223만</td></tr>
+      <tr><td>연간 CM</td><td class="neg">-2,593만</td><td class="neg">-6,210만</td><td class="neg">-2,493만</td><td class="neg">-504만</td><td class="pos">+2,680만</td></tr>
+    </tbody>
+  </table>
+
+  <div class="takeaway">
+    <div class="tk-title">INSIGHT</div>
+    <div class="tk-body">
+      S1(+700)과 S2(+1,200)는 적자를 축소하지만 <strong>흑자 전환에 실패</strong>합니다.
+      <strong>S3(+2,000원)만이 유일하게 흑자를 달성</strong>하며, 가격 미조정 대비 연간 <strong>+8,890만원</strong> 개선됩니다.
+    </div>
+  </div>
+
+  <div class="page-footer">BITE ME &middot; PRICING SIMULATION</div>
+</div>
+
+<!-- PAGE 6: 민감도 분석 -->
+<div class="page">
+  <div class="page-num">6 / 9</div>
+  <div class="section-indicator">
+    <div class="block"></div>
+    <span class="label">S E N S I T I V I T Y</span>
+  </div>
+  <h2>민감도 분석</h2>
+
+  <h3>가격 인상 x 물량 유지율 -> 월간 공헌이익 (만원)</h3>
+  <table>
+    <thead>
+      <tr><th>인상분 \ 유지율</th><th>100%</th><th>95%</th><th>90%</th><th>85%</th><th>80%</th><th>75%</th><th>70%</th><th>60%</th><th>50%</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>미조정</td><td class="matrix-neg">-518</td><td class="matrix-neg">-492</td><td class="matrix-neg">-466</td><td class="matrix-neg">-440</td><td class="matrix-neg">-414</td><td class="matrix-neg">-388</td><td class="matrix-neg">-363</td><td class="matrix-neg">-311</td><td class="matrix-neg">-259</td></tr>
+      <tr><td>+500원</td><td class="matrix-neg">-422</td><td class="matrix-neg">-401</td><td class="matrix-neg">-380</td><td class="matrix-neg">-359</td><td class="matrix-neg">-338</td><td class="matrix-neg">-317</td><td class="matrix-neg">-296</td><td class="matrix-neg">-253</td><td class="matrix-neg">-211</td></tr>
+      <tr><td>+700원</td><td class="matrix-neg">-383</td><td class="matrix-neg">-364</td><td class="matrix-neg">-345</td><td class="matrix-neg">-326</td><td class="matrix-neg">-307</td><td class="matrix-neg">-287</td><td class="matrix-neg">-268</td><td class="matrix-neg">-230</td><td class="matrix-neg">-192</td></tr>
+      <tr><td>+1,000원</td><td class="matrix-neg">-325</td><td class="matrix-neg">-309</td><td class="matrix-neg">-293</td><td class="matrix-neg">-276</td><td class="matrix-neg">-260</td><td class="matrix-neg">-244</td><td class="matrix-neg">-228</td><td class="matrix-neg">-195</td><td class="matrix-neg">-163</td></tr>
+      <tr><td>+1,200원</td><td class="matrix-neg">-49</td><td class="matrix-neg">-47</td><td class="matrix-neg">-44</td><td class="matrix-neg">-42</td><td class="matrix-neg">-40</td><td class="matrix-neg">-37</td><td class="matrix-neg">-35</td><td class="matrix-neg">-30</td><td class="matrix-neg">-25</td></tr>
+      <tr class="highlight-row"><td><strong>+1,400원</strong></td><td class="matrix-be">+3</td><td class="matrix-be">+3</td><td class="matrix-be">+2</td><td class="matrix-be">+2</td><td class="matrix-be">+2</td><td class="matrix-be">+2</td><td class="matrix-be">+2</td><td class="matrix-be">+1</td><td class="matrix-be">+1</td></tr>
+      <tr><td>+1,500원</td><td class="matrix-pos">+68</td><td class="matrix-pos">+64</td><td class="matrix-pos">+61</td><td class="matrix-pos">+58</td><td class="matrix-pos">+54</td><td class="matrix-pos">+51</td><td class="matrix-pos">+47</td><td class="matrix-pos">+41</td><td class="matrix-pos">+34</td></tr>
+      <tr><td><strong>+2,000원</strong></td><td class="matrix-pos"><strong>+263</strong></td><td class="matrix-pos"><strong>+250</strong></td><td class="matrix-pos"><strong>+237</strong></td><td class="matrix-pos"><strong>+223</strong></td><td class="matrix-pos"><strong>+210</strong></td><td class="matrix-pos"><strong>+197</strong></td><td class="matrix-pos"><strong>+184</strong></td><td class="matrix-pos"><strong>+158</strong></td><td class="matrix-pos"><strong>+131</strong></td></tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    <strong>읽는 법:</strong> 녹색 = 이익 / 빨간색 = 적자 / 노란색 = 손익분기<br>
+    <strong>+1,400원</strong>이 손익분기 라인. S3(+2,000원)은 물량이 <strong>50%까지 하락해도 월 +131만원 이익</strong> 유지.
+  </div>
+
+  <div class="divider"></div>
+  <h3>S3(+2,000원) 물량 시나리오별 연간 CM</h3>
+  <div class="kpi-row">
+    <div class="kpi-card green">
+      <div class="kpi-label">100% 유지</div>
+      <div class="kpi-value green">+3,153만</div>
+      <div class="kpi-sub">월 263만</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">85% 유지</div>
+      <div class="kpi-value green">+2,680만</div>
+      <div class="kpi-sub">월 223만</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">70% 유지</div>
+      <div class="kpi-value green">+2,207만</div>
+      <div class="kpi-sub">월 184만</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">50% 유지</div>
+      <div class="kpi-value green">+1,576만</div>
+      <div class="kpi-sub">월 131만</div>
+    </div>
+  </div>
+
+  <div class="page-footer">BITE ME &middot; PRICING SIMULATION</div>
+</div>
+
+<!-- PAGE 7: SKU별 가격 & 포지셔닝 -->
+<div class="page">
+  <div class="page-num">7 / 9</div>
+  <div class="section-indicator">
+    <div class="block"></div>
+    <span class="label">P R I C I N G &nbsp; D E T A I L</span>
+  </div>
+  <h2>SKU별 가격 설정 & 시장 포지셔닝</h2>
+
+  <h3>S3(+2,000원) 적용 시 가격표</h3>
+  <table>
+    <thead>
+      <tr><th>구분</th><th>현재 판매가</th><th>S3 판매가</th><th>인상분</th><th>타사 최고가 한계</th><th>판단</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>대형 단품</td><td>12,500</td><td><strong>14,500</strong></td><td>+2,000</td><td>14,500~14,900</td><td><span class="badge badge-green">안전</span></td></tr>
+      <tr><td>대형 4팩</td><td>42,900</td><td><strong>49,900</strong></td><td>+7,000</td><td>--</td><td>--</td></tr>
+      <tr><td>표준형 단품</td><td>13,500</td><td><strong>15,500</strong></td><td>+2,000</td><td>15,500~15,900</td><td><span class="badge badge-green">안전</span></td></tr>
+      <tr><td>표준형 4팩</td><td>45,900</td><td><strong>53,300</strong></td><td>+7,400</td><td>--</td><td>--</td></tr>
+    </tbody>
+  </table>
+  <div class="note-box">
+    4팩 세트: 기존 할인율 14% 유지 (대형 14.2%, 표준형 15.0%의 중간값).<br>
+    단품 가격을 최고가 한계선까지 인상하여, 4팩 대비 가격 갭 확대 -> 자연스러운 세트 구매 전환 유도.
+  </div>
+
+  <div class="divider"></div>
+  <h3>포지셔닝 정리</h3>
+  <div class="two-col">
+    <div>
+      <div class="note-box" style="border-left-color:var(--navy);">
+        <strong>보솜 일반</strong><br>
+        시장 최고가 / 최고 스펙 / 수익 구조 양호<br>
+        -> 프리미엄 포지션 유지
+      </div>
+    </div>
+    <div>
+      <div class="note-box" style="border-left-color:var(--red);">
+        <strong>보솜 라이트</strong><br>
+        "프리미엄 브랜드의 절약형"이나 스펙이 타사 일반과 유사<br>
+        -> 가격 인상으로 마진 확보 후, 중장기 대체 상품 검토
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <h3>세트 플레이 전략 개요</h3>
+  <div class="takeaway">
+    <div class="tk-title">SET PLAY STRATEGY</div>
+    <div class="tk-body">
+      단품 +2,000원을 <strong>앵커가</strong>로 설정 → 4팩 세트의 가격 메리트 부각 → <strong>100% 세트 판매 구조</strong>로 자연 전환<br>
+      단품 폐지를 직접 실행하지 않고, 가격 차등으로 고객이 스스로 세트를 선택하도록 유도
+    </div>
+  </div>
+  <div class="note-box">
+    <strong>핵심 질문:</strong> 100% 4팩 판매 전환 시, 세트 할인율을 몇 %까지 줄 수 있으면서 흑자를 유지하는가?<br>
+    → 손익분기 할인율 <strong>14.5%</strong> / 상세 분석은 다음 페이지 참조
+  </div>
+
+  <div class="page-footer">BITE ME &middot; PRICING SIMULATION</div>
+</div>
+
+<!-- PAGE 8: 세트 플레이 할인율 분석 -->
+<div class="page">
+  <div class="page-num">8 / 9</div>
+  <div class="section-indicator">
+    <div class="block"></div>
+    <span class="label">S E T &nbsp; P L A Y &nbsp; A N A L Y S I S</span>
+  </div>
+  <h2>세트 플레이 전략: 할인율별 손익 분석</h2>
+
+  <p style="font-size:12px;color:var(--gray);margin-bottom:16px;">
+    전제: 단품 +2,000원 앵커가 설정 후 100% 4팩 세트 판매 전환 |
+    가중평균 단품가 14,915원 (대형 14,500×58.5% + 표준형 15,500×41.5%) |
+    변동비율 30% | 전환율 70%
+  </p>
+
+  <h3>세트 할인율별 단위 경제성</h3>
+  <table>
+    <thead>
+      <tr><th>할인율</th><th>4팩 단가<br>(개당)</th><th>순매출<br>/개</th><th>변동비</th><th>원가</th><th>CM/개</th><th>월간 CM<br>(85%유지)</th><th>판정</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>5%</td><td>14,169</td><td>9,918</td><td>2,975</td><td>6,251</td><td class="pos">+692</td><td class="pos">+468만</td><td><span class="badge badge-green">안정 흑자</span></td></tr>
+      <tr><td>8%</td><td>13,722</td><td>9,605</td><td>2,882</td><td>6,251</td><td class="pos">+473</td><td class="pos">+320만</td><td><span class="badge badge-green">안정 흑자</span></td></tr>
+      <tr><td>10%</td><td>13,424</td><td>9,397</td><td>2,819</td><td>6,251</td><td class="pos">+327</td><td class="pos">+221만</td><td><span class="badge badge-green">안정 흑자</span></td></tr>
+      <tr><td>12%</td><td>13,125</td><td>9,188</td><td>2,756</td><td>6,251</td><td class="pos">+180</td><td class="pos">+122만</td><td><span class="badge badge-green">흑자</span></td></tr>
+      <tr><td>13%</td><td>12,976</td><td>9,083</td><td>2,725</td><td>6,251</td><td class="pos">+107</td><td class="pos">+72만</td><td><span class="badge badge-green">흑자</span></td></tr>
+      <tr class="highlight-row"><td><strong>14%</strong></td><td><strong>12,827</strong></td><td><strong>8,979</strong></td><td><strong>2,694</strong></td><td><strong>6,251</strong></td><td class="pos"><strong>+34</strong></td><td class="pos"><strong>+23만</strong></td><td><span class="badge badge-gold">손익분기 근접</span></td></tr>
+      <tr><td>15%</td><td>12,678</td><td>8,875</td><td>2,662</td><td>6,251</td><td class="neg">-39</td><td class="neg">-26만</td><td><span class="badge badge-red">적자</span></td></tr>
+      <tr><td>16%</td><td>12,529</td><td>8,770</td><td>2,631</td><td>6,251</td><td class="neg">-112</td><td class="neg">-76만</td><td><span class="badge badge-red">적자</span></td></tr>
+      <tr><td>18%</td><td>12,230</td><td>8,561</td><td>2,568</td><td>6,251</td><td class="neg">-258</td><td class="neg">-175만</td><td><span class="badge badge-red">적자</span></td></tr>
+      <tr><td>20%</td><td>11,932</td><td>8,352</td><td>2,506</td><td>6,251</td><td class="neg">-404</td><td class="neg">-273만</td><td><span class="badge badge-red">적자</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="kpi-row col3" style="margin-top:16px;">
+    <div class="kpi-card">
+      <div class="kpi-label">손익분기 할인율</div>
+      <div class="kpi-value gold">14.5%</div>
+      <div class="kpi-sub">이 이하에서 흑자</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">14% 할인 시 CM/개</div>
+      <div class="kpi-value" style="color:var(--green);">+34원</div>
+      <div class="kpi-sub">현재 할인율 유지 기준</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">안전 마진 할인율</div>
+      <div class="kpi-value" style="color:var(--green);">12%</div>
+      <div class="kpi-sub">CM ≥ 200원/개</div>
+    </div>
+  </div>
+
+  <div class="takeaway" style="margin-top:16px;">
+    <div class="tk-title">KEY INSIGHT</div>
+    <div class="tk-body">
+      100% 세트 전환 + 현재 할인율(14%) 유지 시 개당 CM <strong>+34원</strong>으로 흑자 전환되나 마진이 매우 타이트.<br>
+      손익분기 14.5%와 <strong>불과 0.5%p 차이</strong> — 할인율 1%p 차이로 흑/적이 전환됩니다.<br><br>
+      할인율을 <strong>12% 이하</strong>로 낮추면 안정적 마진 확보(+180원/개 이상).
+      동시에 <strong>변동비율 30% 이하 관리</strong>가 세트 플레이 성패를 좌우합니다.
+    </div>
+  </div>
+
+  <div class="page-footer">BITE ME &middot; PRICING SIMULATION</div>
+</div>
+
+<!-- PAGE 9: 권장안 & Next Steps -->
+<div class="page">
+  <div class="page-num">9 / 9</div>
+  <div class="section-indicator">
+    <div class="block"></div>
+    <span class="label">R E C O M M E N D A T I O N</span>
+  </div>
+  <h2>권장안 & Next Steps</h2>
+
+  <div class="takeaway">
+    <div class="tk-title">RECOMMENDATION</div>
+    <div class="tk-body">
+      <strong>S3: 단품 +2,000원 앵커가 + 세트 플레이 전략</strong><br>
+      대형 14,500 / 표준형 15,500 (단품 앵커) → 4팩 세트 할인율 14% 이하 유지 → 100% 세트 전환 유도
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-card green">
+      <div class="kpi-label">단품 인상 효과 (85%)</div>
+      <div class="kpi-value green">+223만/월</div>
+      <div class="kpi-sub">현 믹스 기준</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">100% 세트 전환 시</div>
+      <div class="kpi-value green">+23만/월</div>
+      <div class="kpi-sub">14% 할인 유지 기준</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">세트 손익분기 할인율</div>
+      <div class="kpi-value gold">14.5%</div>
+      <div class="kpi-sub">이 이하에서 흑자</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">안전 마진 할인율</div>
+      <div class="kpi-value gold">12%</div>
+      <div class="kpi-sub">CM ≥ 200원/개</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <h3>실행 로드맵</h3>
+  <table>
+    <thead>
+      <tr><th>단계</th><th>시기</th><th>액션</th><th>판단 기준</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>1. 가격 인상</strong></td><td>즉시</td><td>단품 +2,000원 (앵커가) / 4팩 할인율 14% 이하 연동</td><td>--</td></tr>
+      <tr><td><strong>2. 모니터링</strong></td><td>인상 후 2~4주</td><td>물량 추적 + 단품/세트 비중 변화 확인</td><td>세트 전환율 상승 여부</td></tr>
+      <tr><td><strong>3. 세트 전환 판단</strong></td><td>인상 후 1개월</td><td>세트 비중 80%+ → 세트 플레이 정착<br>물량 70% 미만 → S2 조정 검토</td><td>월간 CM 흑자 + 세트 비중</td></tr>
+      <tr><td><strong>4. 할인율 최적화</strong></td><td>인상 후 2~3개월</td><td>세트 전환 정착 시 할인율 12%로 하향 검토<br>단품 비중 10% 이하 시 단품 폐지</td><td>CM ≥ 200원/개 목표</td></tr>
+      <tr><td><strong>5. 중장기</strong></td><td>Q3~Q4</td><td>대나무/재생펄프 패드 기획<br>원가 절감 + 가격 수용 가능한 라이트 대체</td><td>원가 대비 시장가 경쟁력</td></tr>
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+  <h3>리스크 & 대응</h3>
+  <table>
+    <thead>
+      <tr><th>리스크</th><th>가능성</th><th>대응</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>세트 전환 부진 (단품 비중 유지)</td><td>중간</td><td>단품 추가 인상 또는 단품 단계적 폐지</td></tr>
+      <tr><td>변동비율이 실제 35% 수준</td><td>중간</td><td>손익분기 할인율 하락 → 할인율 10% 이하 필요</td></tr>
+      <tr><td>쿠팡 채널 마진 악화</td><td>중간</td><td>쿠팡 공급가 재협상 / 자사몰 세트 전용 운영</td></tr>
+      <tr><td>경쟁사 가격 인하</td><td>낮음</td><td>보솜 프리미엄 포지션으로 차별화</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    <strong>핵심 변수:</strong> 변동비율 30%에서 세트 할인율 14.5%가 손익분기. 변동비가 1%p 오를 때마다 손익분기 할인율은 ~1%p 하락하므로,
+    변동비 관리와 할인율 설정이 세트 플레이 전략의 성패를 좌우함. 인터랙티브 시뮬레이션 도구로 상세 시나리오 확인 가능.
+  </div>
+
+  <div class="page-footer">BITE ME &middot; PRICING SIMULATION</div>
+</div>
+
+</body>
+</html>

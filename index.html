@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보솜 라이트 PQ 시뮬레이션</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
+    background: #f5f5f7; color: #1d1d1f;
+    padding: 24px; max-width: 1280px; margin: 0 auto; line-height: 1.5;
+  }
+  h1 { font-size: 28px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-bottom: 16px; color: #333; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+  h3 { font-size: 15px; margin-bottom: 12px; color: #555; }
+  .subtitle { color: #666; font-size: 14px; margin-bottom: 32px; }
+  .section { background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 9px 10px; text-align: right; border-bottom: 1px solid #f0f0f0; }
+  th { background: #f8f8fa; font-weight: 600; color: #555; text-align: center; font-size: 12px; }
+  td:first-child, th:first-child { text-align: left; }
+  .negative { color: #e74c3c; font-weight: 600; }
+  .positive { color: #27ae60; font-weight: 600; }
+  .neutral { color: #e67e22; font-weight: 600; }
+  .highlight-row { background: #fffde7 !important; }
+  .slider-group { margin: 16px 0; }
+  .slider-group label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #333; }
+  .slider-hint { font-size: 11px; color: #999; margin-top: 2px; }
+  .slider-container { display: flex; align-items: center; gap: 10px; }
+  .slider-container span { font-size: 12px; color: #999; min-width: 36px; }
+  input[type="range"] { flex: 1; height: 6px; -webkit-appearance: none; background: #e0e0e0; border-radius: 3px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #007aff; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+  .slider-value { min-width: 100px; font-size: 18px; font-weight: 700; color: #007aff; text-align: right; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+  .kpi-card { background: #f8f8fa; border-radius: 12px; padding: 14px; text-align: center; }
+  .kpi-card .label { font-size: 11px; color: #888; margin-bottom: 2px; }
+  .kpi-card .value { font-size: 22px; font-weight: 700; }
+  .kpi-card .sub { font-size: 11px; color: #999; margin-top: 2px; }
+  .scenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 16px 0; }
+  .scenario-card { border: 2px solid #e8e8e8; border-radius: 14px; padding: 18px; text-align: center; }
+  .scenario-card.best { border-color: #007aff; background: #f0f7ff; }
+  .scenario-card .sc-badge { font-size: 11px; font-weight: 700; color: #007aff; margin-bottom: 6px; }
+  .scenario-card .sc-title { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+  .scenario-card .sc-price { font-size: 26px; font-weight: 800; margin-bottom: 2px; }
+  .scenario-card .sc-detail { font-size: 12px; color: #888; margin: 3px 0; }
+  .scenario-card .sc-cm { font-size: 17px; font-weight: 700; margin-top: 10px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: #e8f5e9; color: #2e7d32; }
+  .badge-red { background: #ffebee; color: #c62828; }
+  .badge-orange { background: #fff3e0; color: #e65100; }
+  .badge-blue { background: #e3f2fd; color: #1565c0; }
+  .matrix-pos { background: #e8f5e9; }
+  .matrix-neg { background: #ffebee; }
+  .matrix-be { background: #fff9c4; font-weight: 700; }
+  .insight-box { background: #f0f7ff; border-left: 4px solid #007aff; padding: 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13px; line-height: 1.7; }
+  .warn-box { background: #fff8e1; border-left: 4px solid #f9a825; padding: 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13px; line-height: 1.7; }
+  .alert-box { background: #ffebee; border-left: 4px solid #e53935; padding: 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13px; line-height: 1.7; }
+  .divider { height: 1px; background: #eee; margin: 20px 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .footnote { font-size: 11px; color: #aaa; margin-top: 16px; line-height: 1.6; }
+  .rec-card { border: 2px solid #007aff; border-radius: 14px; padding: 20px; text-align: center; background: #f0f7ff; }
+  .cost-flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 12px 0; font-size: 13px; }
+  .cost-flow .arrow { color: #999; }
+  .cost-flow .box { background: #f0f0f5; border-radius: 6px; padding: 4px 10px; font-weight: 600; }
+  .cost-flow .box.highlight { background: #e3f2fd; color: #1565c0; }
+  .cost-flow .box.neg { background: #ffebee; color: #c62828; }
+  @media (max-width: 768px) {
+    .scenarios { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    body { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>보솜 라이트 PQ 시뮬레이션</h1>
+<p class="subtitle">원가 인상 대응 가격-물량 시나리오 분석 | 2026.05 | 단품 기준 최대 +2,000원</p>
+
+<!-- 1. 현재 구조 -->
+<div class="section">
+  <h2>1. 현재 단위 경제성 &amp; 원가 인상 영향</h2>
+  <table>
+    <thead>
+      <tr><th>구분</th><th>판매가</th><th>현재 원가</th><th>5월 예상 원가</th><th>인상분</th><th>인상율</th><th>매출총이익(현재)</th><th>매출총이익(인상 후)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>대형 단품</td><td>12,500</td><td>5,523</td><td>5,901</td><td class="negative">+378</td><td>6.9%</td><td class="positive">6,977</td><td class="positive">6,599</td></tr>
+      <tr><td>대형 4팩</td><td>42,900</td><td>22,094</td><td>23,606</td><td class="negative">+1,512</td><td>6.9%</td><td class="positive">20,806</td><td class="positive">19,294</td></tr>
+      <tr><td>표준형 단품</td><td>13,500</td><td>6,061</td><td>6,441</td><td class="negative">+380</td><td>6.3%</td><td class="positive">7,439</td><td class="positive">7,059</td></tr>
+      <tr><td>표준형 4팩</td><td>45,900</td><td>24,246</td><td>25,766</td><td class="negative">+1,520</td><td>6.3%</td><td class="positive">21,654</td><td class="positive">20,134</td></tr>
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+  <h3>단위 경제 구조 (개당)</h3>
+  <div class="cost-flow" id="cost-flow"></div>
+
+  <div class="divider"></div>
+  <h3>2026 Jan-Apr 월평균 실적</h3>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="label">월평균 출고량</div>
+      <div class="value">7,962</div>
+      <div class="sub">대형 58% / 표준형 42%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">월평균 순매출</div>
+      <div class="value">6,371만원</div>
+      <div class="sub">단위당 ~8,001원</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">월평균 공헌이익</div>
+      <div class="value negative" id="kpi-cm">--</div>
+      <div class="sub">단위당 <span id="kpi-cm-unit">--</span>원</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">손익분기 최소 인상분</div>
+      <div class="value neutral" id="kpi-be">--</div>
+      <div class="sub" id="kpi-be-sub">--</div>
+    </div>
+  </div>
+
+  <div id="impact-box" class="warn-box"></div>
+</div>
+
+<!-- 2. 핵심 가정 조정 -->
+<div class="section">
+  <h2>2. 핵심 가정 조정</h2>
+  <div class="two-col">
+    <div>
+      <div class="slider-group">
+        <label>변동비율 (순매출 대비 %)</label>
+        <div class="slider-container">
+          <span>15%</span>
+          <input type="range" id="sl-var" min="15" max="45" step="1" value="30">
+          <span>45%</span>
+        </div>
+        <div class="slider-value" id="v-var">35%</div>
+      </div>
+      <p class="slider-hint">물류/수수료/프로모션 등. 기본값 30%. P&L 역산 28%.</p>
+
+      <div class="slider-group">
+        <label>순매출 전환율 (판매가 대비 실 순매출)</label>
+        <div class="slider-container">
+          <span>55%</span>
+          <input type="range" id="sl-conv" min="55" max="85" step="5" value="70">
+          <span>85%</span>
+        </div>
+        <div class="slider-value" id="v-conv">70%</div>
+      </div>
+      <p class="slider-hint">판매가에서 할인/쿠폰 차감 후 실제 순매출 비율. 가격 인상분 중 이 비율만큼 순매출 증가.</p>
+
+      <div class="warn-box" style="margin-top:12px;font-size:12px;">
+        <strong>순매출 전환율 ~70% 산출 근거:</strong> 출고량 가중평균 판매가(~11,300원) 대비 실제 순매출 단가(~8,001원) = 약 70%.
+        쿠팡 등 외부 채널에 60% 수준으로 공급하는 구조가 반영된 결과로, 채널 믹스에 따라 전환율이 달라짐.
+        <table class="small-table" style="margin-top:8px;font-size:11px;width:auto;">
+          <thead><tr><th>채널</th><th>추정 전환율</th><th>+2,000원 인상 시 순매출 증분</th></tr></thead>
+          <tbody>
+            <tr><td style="text-align:left;">자사몰</td><td>~85-90%</td><td>+1,700~1,800원</td></tr>
+            <tr><td style="text-align:left;">쿠팡 (공급가 60%)</td><td>~60%</td><td>+1,200원</td></tr>
+            <tr><td style="text-align:left;font-weight:600;">가중평균 (현재)</td><td style="font-weight:600;">~70%</td><td style="font-weight:600;">~+1,400원</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="insight-box">
+        <strong>변동비 구조가 중요한 이유:</strong><br><br>
+        변동비가 순매출 비례(%)이면, 가격을 올려도 변동비가 같이 증가합니다.<br>
+        가격 인상 +1,000원 시:<br>
+        - 순매출 증가: +1,000 x <span id="hint-conv">70</span>% = <span id="hint-rev">+700</span>원<br>
+        - 변동비 증가: <span id="hint-rev2">+700</span> x <span id="hint-var">35</span>% = <span id="hint-varc">-245</span>원<br>
+        - <strong>실제 CM 개선: <span id="hint-net">+455</span>원</strong> (인상분의 <span id="hint-pct">45.5</span>%만 이익으로)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 인터랙티브 시뮬레이션 -->
+<div class="section">
+  <h2>3. 인터랙티브 시뮬레이션</h2>
+  <div class="two-col">
+    <div>
+      <div class="slider-group">
+        <label>단품 판매가 인상분</label>
+        <div class="slider-container">
+          <span>0</span>
+          <input type="range" id="sl-price" min="0" max="2000" step="100" value="2000">
+          <span>2,000</span>
+        </div>
+        <div class="slider-value" id="v-price">+2,000원</div>
+      </div>
+      <div class="slider-group">
+        <label>물량 유지율</label>
+        <div class="slider-container">
+          <span>50%</span>
+          <input type="range" id="sl-vol" min="50" max="100" step="5" value="85">
+          <span>100%</span>
+        </div>
+        <div class="slider-value" id="v-vol">85%</div>
+      </div>
+    </div>
+    <div>
+      <div class="kpi-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="kpi-card">
+          <div class="label">단위당 CM</div>
+          <div class="value" id="r-cm-unit">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">월간 판매량</div>
+          <div class="value" id="r-vol">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">월간 공헌이익</div>
+          <div class="value" id="r-cm-m">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">연간 공헌이익</div>
+          <div class="value" id="r-cm-y">--</div>
+        </div>
+      </div>
+      <div class="kpi-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="kpi-card">
+          <div class="label">vs 가격 미조정 대비</div>
+          <div class="value" id="r-diff">--</div>
+          <div class="sub">월간 개선분</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">판정</div>
+          <div class="value" id="r-verdict">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. 3 Scenarios -->
+<div class="section">
+  <h2>4. 3대 시나리오 비교</h2>
+  <p style="font-size:12px;color:#999;margin-bottom:14px;">물량 유지율 85% / 변동비율 <span id="sc-var">35</span>% / 전환율 <span id="sc-conv">70</span>%</p>
+  <div class="scenarios" id="sc-cards"></div>
+  <div class="divider"></div>
+  <h3>시나리오별 세부 비교</h3>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>현재<br>(인상 전)</th><th>원가 인상<br>가격 미조정</th><th>S1<br>+700원</th><th>S2<br>+1,200원</th><th>S3<br>+2,000원</th></tr>
+    </thead>
+    <tbody id="sc-tbody"></tbody>
+  </table>
+</div>
+
+<!-- 5. Sensitivity -->
+<div class="section">
+  <h2>5. 민감도 분석 -- 월간 공헌이익 (만원)</h2>
+  <p style="font-size:12px;color:#999;margin-bottom:14px;">변동비율 <span id="mx-var">35</span>% / 전환율 <span id="mx-conv">70</span>%</p>
+  <div style="overflow-x:auto;">
+  <table>
+    <thead>
+      <tr><th style="min-width:100px;">인상분 \ 유지율</th><th>100%</th><th>95%</th><th>90%</th><th>85%</th><th>80%</th><th>75%</th><th>70%</th><th>60%</th><th>50%</th></tr>
+    </thead>
+    <tbody id="mx-tbody"></tbody>
+  </table>
+  </div>
+</div>
+
+<!-- 6. SKU별 가격 -->
+<div class="section">
+  <h2>6. SKU별 시나리오 가격 &amp; 타사 한계선</h2>
+  <table>
+    <thead>
+      <tr><th>구분</th><th>현재 판매가</th><th>S1 (+700)</th><th>S2 (+1,200)</th><th>S3 (+2,000)</th><th>타사 최고가 한계</th><th>판단</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>대형 단품</td><td>12,500</td><td>13,200</td><td>13,700</td><td>14,500</td><td>14,500~14,900</td><td><span class="badge badge-green">S3까지 안전</span></td></tr>
+      <tr><td>대형 4팩</td><td>42,900</td><td id="sku-l4-s1">--</td><td id="sku-l4-s2">--</td><td id="sku-l4-s3">--</td><td>--</td><td>--</td></tr>
+      <tr><td>표준형 단품</td><td>13,500</td><td>14,200</td><td>14,700</td><td>15,500</td><td>15,500~15,900</td><td><span class="badge badge-green">S3까지 안전</span></td></tr>
+      <tr><td>표준형 4팩</td><td>45,900</td><td id="sku-s4-s1">--</td><td id="sku-s4-s2">--</td><td id="sku-s4-s3">--</td><td>--</td><td>--</td></tr>
+    </tbody>
+  </table>
+  <p class="footnote" style="margin-top:12px;">4팩 세트 할인율 14% 고정 적용 (현재 할인율 유지: 대형 14.2%, 표준형 15.0% 중간값). 할인율별 상세 분석은 섹션 7 참조.</p>
+</div>
+
+<!-- 7. 세트 플레이 전략 -->
+<div class="section">
+  <h2>7. 세트 플레이 전략 분석</h2>
+  <div class="insight-box">
+    <strong>전략 컨셉:</strong> 단품 +2,000원 인상(앵커가) → 4팩 세트의 가격 메리트 부각 → 100% 세트 판매 구조로 자연 전환<br>
+    <strong>핵심 질문:</strong> 100% 4팩 판매 시, 세트 할인율을 몇 %까지 줄 수 있으면서 흑자를 유지하는가?
+  </div>
+
+  <h3 style="margin-top:20px;">100% 4팩 판매 시 할인율별 손익 구조</h3>
+  <p style="font-size:12px;color:#999;margin-bottom:10px;">
+    가중평균 단품가 14,915원 (대형 14,500×58.5% + 표준형 15,500×41.5%) |
+    변동비율 <span id="sp-var">30</span>% | 전환율 <span id="sp-conv">70</span>%
+  </p>
+
+  <div style="overflow-x:auto;">
+  <table>
+    <thead>
+      <tr><th>할인율</th><th>4팩 단가<br>(개당)</th><th>순매출<br>/개</th><th>변동비</th><th>원가</th><th>CM/개</th><th>월간 CM<br>(85%유지)</th><th>판정</th></tr>
+    </thead>
+    <tbody id="sp-tbody"></tbody>
+  </table>
+  </div>
+
+  <!-- 손익분기 위치 시각화 -->
+  <div style="margin:20px 0 8px;">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:4px;">
+      <span>5%</span><span id="sp-be-mark">손익분기 --</span><span>20%</span>
+    </div>
+    <div style="height:16px;border-radius:8px;overflow:hidden;background:#ffebee;position:relative;">
+      <div id="sp-bar-green" style="height:100%;background:linear-gradient(90deg,#4caf50,#8bc34a);border-radius:8px 0 0 8px;transition:width .3s;"></div>
+      <div id="sp-bar-marker" style="position:absolute;top:-2px;width:2px;height:20px;background:#333;border-radius:1px;transition:left .3s;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px;">
+      <span>← 흑자 (할인 적게)</span><span>적자 (할인 많이) →</span>
+    </div>
+  </div>
+
+  <div class="kpi-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top:16px;">
+    <div class="kpi-card">
+      <div class="label">손익분기 할인율</div>
+      <div class="value neutral" id="sp-be-disc">--</div>
+      <div class="sub">이 이하에서 흑자</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">14% 할인 시 CM/개</div>
+      <div class="value" id="sp-current-cm">--</div>
+      <div class="sub">현재 할인율 유지 기준</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">안전 마진 할인율</div>
+      <div class="value positive" id="sp-safe-disc">--</div>
+      <div class="sub">CM ≥ 200원/개</div>
+    </div>
+  </div>
+
+  <div id="sp-conclusion" class="warn-box" style="margin-top:16px;"></div>
+
+  <div class="divider"></div>
+  <h3>단품 유지 vs 세트 전환 비교</h3>
+  <div class="two-col">
+    <div>
+      <h3 style="color:#27ae60;">세트 플레이 (권장)</h3>
+      <ul style="font-size:13px;line-height:2;padding-left:18px;">
+        <li>단품 +2,000원 = <strong>앵커 가격</strong> 역할</li>
+        <li>4팩 세트의 가격 메리트 자연 부각</li>
+        <li>세트 구매 유도 → 객단가 상승</li>
+        <li>단품 비중 자연 감소 후 폐지 검토</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="color:#e74c3c;">주의 사항</h3>
+      <ul style="font-size:13px;line-height:2;padding-left:18px;">
+        <li>손익분기 할인율이 매우 타이트</li>
+        <li>할인율 1%p 차이로 흑/적 전환</li>
+        <li><strong>변동비 관리가 핵심 레버</strong></li>
+        <li>채널별 전환율 차이 고려 필요</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 8. 결론 -->
+<div class="section">
+  <h2>8. 결론 &amp; 권장안</h2>
+  <div id="rec-area"></div>
+</div>
+
+<div class="footnote" style="margin-bottom:40px;">
+  * 순매출 전환율: 판매가 대비 실제 순매출 비율 (할인/쿠폰 차감 후). 가격 인상분 중 이 비율만큼 순매출에 반영.<br>
+  * 변동비율: 순매출 대비 변동비(물류/수수료/프로모션 등) 비율. 기본값 30%, P&L 역산 28%.<br>
+  * CM 산출: CM = 순매출 x (1 - 변동비율) - 매출원가. 변동비가 매출 비례이므로 가격 인상 효과 감쇄됨.<br>
+  * 원가 인상: 대형 +378원, 표준형 +380원 (2월 기준 대비 5월 예상).
+</div>
+
+<script>
+const B = {
+  revPerUnit: 8001,
+  cogsPerUnit: 5872,
+  costUp: 379,
+  avgVol: 7962,
+};
+
+function fmt(n) { return n == null ? '--' : Math.round(n).toLocaleString('ko-KR'); }
+function fmtW(n) {
+  const a = Math.abs(n), s = n > 0 ? '+' : (n < 0 ? '-' : '');
+  if (a >= 1e8) return s + (a / 1e8).toFixed(1) + '억원';
+  if (a >= 1e4) return s + fmt(Math.round(a / 1e4)) + '만원';
+  return s + fmt(Math.round(a)) + '원';
+}
+function sign(n) { return (n >= 0 ? '+' : '') + fmt(Math.round(n)); }
+function cls(n) { return n >= 0 ? 'positive' : 'negative'; }
+function elSet(id, txt, c) {
+  const e = document.getElementById(id);
+  if (!e) return;
+  e.innerHTML = txt;
+  if (c !== undefined) e.className = 'value ' + c;
+}
+
+// CM calculation with % variable cost
+function calcCM(rev, cogs, varRate) {
+  return rev * (1 - varRate) - cogs;
+}
+
+function effectivePrice(P, singlePct, setDisc) {
+  return P * (singlePct + (1 - singlePct) * (1 - setDisc));
+}
+
+function updateSetPlay() {
+  const varRate = +document.getElementById('sl-var').value / 100;
+  const convRate = +document.getElementById('sl-conv').value / 100;
+  const newCogs = B.cogsPerUnit + B.costUp;
+  const wsp = 14500 * 0.585 + 15500 * 0.415; // 14,915 가중평균 단품가
+
+  document.getElementById('sp-var').textContent = (varRate * 100).toFixed(0);
+  document.getElementById('sp-conv').textContent = (convRate * 100).toFixed(0);
+
+  // 손익분기 할인율: CM=0 → SD = 1 - newCogs/(wsp*conv*(1-var))
+  const denom = wsp * convRate * (1 - varRate);
+  const beDiscPrecise = denom > 0 ? (1 - newCogs / denom) * 100 : -1;
+
+  let safedisc = null;
+  const discSteps = [];
+  for (let d = 5; d <= 20; d++) discSteps.push(d);
+
+  const rows = discSteps.map(d => {
+    const sd = d / 100;
+    const packPrice = Math.round(wsp * (1 - sd));
+    const rev = packPrice * convRate;
+    const cm = rev * (1 - varRate) - newCogs;
+    const monthlyCM85 = cm * B.avgVol * 0.85;
+    if (cm >= 200) safedisc = d;
+
+    const verdict = cm > 200 ? '안정 흑자' : cm > 50 ? '흑자' : cm > -50 ? '손익분기' : '적자';
+    const vBadge = cm > 200 ? 'badge-green' : cm > 50 ? 'badge-blue' : cm > -50 ? 'badge-orange' : 'badge-red';
+    const isCurrent = d === 14;
+    const isBE = Math.abs(d - beDiscPrecise) < 0.8;
+
+    let rowClass = '';
+    if (isCurrent) rowClass = 'highlight-row';
+
+    return `<tr class="${rowClass}" ${isBE ? 'style="border-left:3px solid #f9a825;"' : ''}>
+      <td style="text-align:center;font-weight:600;">${d}%${isCurrent ? ' ◀ 현재' : ''}</td>
+      <td>${fmt(packPrice)}원</td>
+      <td>${fmt(Math.round(rev))}원</td>
+      <td>${fmt(Math.round(rev * varRate))}원</td>
+      <td>${fmt(newCogs)}원</td>
+      <td><span class="${cls(cm)}">${sign(Math.round(cm))}원</span></td>
+      <td><span class="${cls(monthlyCM85)}">${fmtW(monthlyCM85)}</span></td>
+      <td><span class="badge ${vBadge}">${verdict}</span></td>
+    </tr>`;
+  });
+
+  document.getElementById('sp-tbody').innerHTML = rows.join('');
+
+  // 시각화 바
+  const barRange = 20 - 5; // 5%~20%
+  if (beDiscPrecise > 0 && beDiscPrecise <= 30) {
+    const greenPct = Math.min(100, Math.max(0, (beDiscPrecise - 5) / barRange * 100));
+    document.getElementById('sp-bar-green').style.width = greenPct + '%';
+    document.getElementById('sp-bar-marker').style.left = greenPct + '%';
+    document.getElementById('sp-be-mark').textContent = '손익분기 ' + beDiscPrecise.toFixed(1) + '%';
+    elSet('sp-be-disc', beDiscPrecise.toFixed(1) + '%', beDiscPrecise >= 15 ? 'positive' : 'neutral');
+  } else if (beDiscPrecise <= 0) {
+    document.getElementById('sp-bar-green').style.width = '0%';
+    document.getElementById('sp-bar-marker').style.left = '0%';
+    document.getElementById('sp-be-mark').textContent = '흑자 불가';
+    elSet('sp-be-disc', '흑자 불가', 'negative');
+  } else {
+    document.getElementById('sp-bar-green').style.width = '100%';
+    document.getElementById('sp-bar-marker').style.left = '100%';
+    document.getElementById('sp-be-mark').textContent = '손익분기 ' + beDiscPrecise.toFixed(1) + '%';
+    elSet('sp-be-disc', beDiscPrecise.toFixed(1) + '%', 'positive');
+  }
+
+  // 14% CM
+  const cm14 = wsp * 0.86 * convRate * (1 - varRate) - newCogs;
+  elSet('sp-current-cm', sign(Math.round(cm14)) + '원', cls(cm14));
+
+  // 안전 마진
+  if (safedisc !== null) {
+    elSet('sp-safe-disc', safedisc + '%', 'positive');
+  } else {
+    elSet('sp-safe-disc', '해당없음', 'negative');
+  }
+
+  // 결론
+  let concl = '';
+  if (beDiscPrecise <= 0) {
+    concl = `<strong>⚠ 변동비율 ${(varRate*100).toFixed(0)}% / 전환율 ${(convRate*100).toFixed(0)}% 기준:</strong>
+      100% 4팩 전환 + 0% 할인에서도 흑자 불가. 변동비 절감 또는 원가 인하 필요.`;
+  } else if (cm14 > 200) {
+    concl = `<strong>세트 플레이 실행 가능:</strong> 현재 할인율(14%) 유지해도 개당 CM <strong>${sign(Math.round(cm14))}원</strong>으로 안정적 흑자.
+      손익분기 할인율 <strong>${beDiscPrecise.toFixed(1)}%</strong>까지 여유분 ${(beDiscPrecise - 14).toFixed(1)}%p 확보.`;
+  } else if (cm14 > 0) {
+    concl = `<strong>세트 플레이 가능하나 마진 타이트:</strong> 14% 할인 시 개당 CM <strong>${sign(Math.round(cm14))}원</strong>.
+      손익분기 ${beDiscPrecise.toFixed(1)}%와 불과 <strong>${(beDiscPrecise - 14).toFixed(1)}%p</strong> 차이.
+      할인율을 <strong>${safedisc || 10}% 이하</strong>로 낮추면 안정적 마진 확보.
+      <br><br>변동비율 1%p 절감 시 CM 개선 효과가 크므로, <strong>변동비 관리</strong>가 세트 플레이 성패를 좌우.`;
+  } else {
+    concl = `<strong>14% 할인 시 적자 지속:</strong> 개당 CM <strong>${sign(Math.round(cm14))}원</strong>.
+      할인율을 <strong>${Math.floor(beDiscPrecise)}% 이하</strong>로 줄이거나, 변동비율 절감 필요.
+      현재 변동비율 ${(varRate*100).toFixed(0)}% → ${Math.max(15, Math.floor((varRate*100) - 3))}%로 낮추면 14% 할인에서도 흑자 가능.`;
+  }
+  document.getElementById('sp-conclusion').innerHTML = concl;
+}
+
+function update() {
+  const varRate = +document.getElementById('sl-var').value / 100;
+  const convRate = +document.getElementById('sl-conv').value / 100;
+  const P = +document.getElementById('sl-price').value;
+  const V = +document.getElementById('sl-vol').value;
+  const SD = 0.14; // 세트 할인율 고정 14%
+  const SP = 0.20; // 단품 비중 고정 20%
+
+  // Labels
+  document.getElementById('v-var').textContent = (varRate * 100).toFixed(0) + '%';
+  document.getElementById('v-conv').textContent = (convRate * 100).toFixed(0) + '%';
+  document.getElementById('v-price').textContent = '+' + fmt(P) + '원';
+  document.getElementById('v-vol').textContent = V + '%';
+
+  // Effective price increase (weighted by single/set mix and set discount)
+  const effP = effectivePrice(P, SP, SD);
+
+  const newCogs = B.cogsPerUnit + B.costUp;
+
+  // Current CM (before cost increase)
+  const cmCurrent = calcCM(B.revPerUnit, B.cogsPerUnit, varRate);
+  // After cost increase, no price change
+  const cmNoChange = calcCM(B.revPerUnit, newCogs, varRate);
+  // After cost increase + price increase (using effective P)
+  const newRev = B.revPerUnit + effP * convRate;
+  const cmNew = calcCM(newRev, newCogs, varRate);
+
+  // Breakeven: need effP such that CM = 0
+  // (B.revPerUnit + effP*convRate) * (1-varRate) = newCogs
+  // effP = (newCogs/(1-varRate) - B.revPerUnit) / convRate
+  // But effP = P * (SP + (1-SP)*(1-SD)), so P = effP / (SP + (1-SP)*(1-SD))
+  const effPBE = Math.max(0, (newCogs / (1 - varRate) - B.revPerUnit) / convRate);
+  const mixFactor = SP + (1 - SP) * (1 - SD);
+  const bePx = Math.max(0, Math.ceil(effPBE / mixFactor / 100) * 100);
+  const beExceedsMax = bePx > 2000;
+
+  // === Section 1: Cost flow ===
+  const varPerUnit = Math.round(B.revPerUnit * varRate);
+  document.getElementById('cost-flow').innerHTML = `
+    <span class="box">순매출 ${fmt(B.revPerUnit)}원</span>
+    <span class="arrow">-</span>
+    <span class="box">변동비 ${fmt(varPerUnit)}원 (${(varRate*100).toFixed(0)}%)</span>
+    <span class="arrow">-</span>
+    <span class="box">원가 ${fmt(B.cogsPerUnit)}원</span>
+    <span class="arrow">=</span>
+    <span class="box ${cmCurrent >= 0 ? 'highlight' : 'neg'}">CM ${sign(cmCurrent)}원</span>
+    <span class="arrow" style="margin-left:12px;">| 원가 인상 후:</span>
+    <span class="box neg">CM ${sign(cmNoChange)}원</span>
+  `;
+
+  // KPIs
+  const monthlyCMCurrent = cmCurrent * B.avgVol;
+  elSet('kpi-cm', fmtW(monthlyCMCurrent), cls(monthlyCMCurrent));
+  elSet('kpi-cm-unit', fmt(Math.round(cmCurrent)));
+
+  if (beExceedsMax) {
+    elSet('kpi-be', '+' + fmt(bePx) + '원', 'negative');
+    elSet('kpi-be-sub', '2,000원 한계 초과!');
+  } else {
+    elSet('kpi-be', '+' + fmt(bePx) + '원', 'neutral');
+    elSet('kpi-be-sub', '이 이상 올려야 흑자');
+  }
+
+  // Impact box
+  const noChgMonthly = cmNoChange * B.avgVol;
+  const noChgAnnual = noChgMonthly * 12;
+  const impactClass = beExceedsMax ? 'alert-box' : 'warn-box';
+  let impactHTML = `<strong>원가 인상 시 (가격 미조정):</strong> 단위당 CM ${sign(cmCurrent)}원 -> ${sign(cmNoChange)}원,
+    월간 ${fmtW(noChgMonthly)}, 연간 ${fmtW(noChgAnnual)}.`;
+  if (beExceedsMax) {
+    impactHTML += `<br><br><strong style="color:#c62828;">주의: 변동비율 ${(varRate*100).toFixed(0)}% 기준, 손익분기 인상분(+${fmt(bePx)}원)이 최대 한계(+2,000원)를 초과합니다.
+    가격 인상만으로는 흑자 전환 불가. 변동비 절감 또는 원가 절감 병행이 필요합니다.</strong>`;
+  }
+  document.getElementById('impact-box').className = impactClass;
+  document.getElementById('impact-box').innerHTML = impactHTML;
+
+  // === Section 2: Hints ===
+  const hintRev = Math.round(1000 * convRate);
+  const hintVar = Math.round(hintRev * varRate);
+  const hintNet = hintRev - hintVar;
+  document.getElementById('hint-conv').textContent = (convRate * 100).toFixed(0);
+  document.getElementById('hint-rev').textContent = '+' + fmt(hintRev);
+  document.getElementById('hint-rev2').textContent = '+' + fmt(hintRev);
+  document.getElementById('hint-var').textContent = (varRate * 100).toFixed(0);
+  document.getElementById('hint-varc').textContent = '-' + fmt(hintVar);
+  document.getElementById('hint-net').textContent = '+' + fmt(hintNet);
+  document.getElementById('hint-pct').textContent = (hintNet / 10).toFixed(1);
+
+  // === Section 3: Interactive ===
+  const vol = Math.round(B.avgVol * V / 100);
+  const mCM = cmNew * vol;
+  const yCM = mCM * 12;
+  const diff = mCM - noChgMonthly;
+
+  elSet('r-cm-unit', sign(cmNew) + '원', cls(cmNew));
+  elSet('r-vol', fmt(vol) + '개', '');
+  elSet('r-cm-m', fmtW(mCM), cls(mCM));
+  elSet('r-cm-y', fmtW(yCM), cls(yCM));
+  elSet('r-diff', fmtW(diff), cls(diff));
+  const verdict = cmNew > 0 ? '흑자 전환' : (cmNew > cmNoChange ? '적자 축소' : '적자 유지');
+  const verdictCls = cmNew > 0 ? 'positive' : (cmNew > cmNoChange ? 'neutral' : 'negative');
+  elSet('r-verdict', verdict, verdictCls);
+
+  // === Section 4: Scenarios ===
+  document.getElementById('sc-var').textContent = (varRate * 100).toFixed(0);
+  document.getElementById('sc-conv').textContent = (convRate * 100).toFixed(0);
+
+  const scs = [
+    { name: 'S1: 소폭 인상', p: 700, desc: '최소 인상' },
+    { name: 'S2: 중간 인상', p: 1200, desc: '중간 수준' },
+    { name: 'S3: 최대 인상', p: 2000, desc: '타사 한계선 도달' },
+  ];
+
+  let bestI = 0, bestVal = -Infinity;
+  scs.forEach((s, i) => {
+    const ep = effectivePrice(s.p, SP, SD);
+    const c = calcCM(B.revPerUnit + ep * convRate, newCogs, varRate) * B.avgVol * 0.85;
+    if (c > bestVal) { bestVal = c; bestI = i; }
+  });
+
+  document.getElementById('sc-cards').innerHTML = scs.map((s, i) => {
+    const ep = effectivePrice(s.p, SP, SD);
+    const cu = calcCM(B.revPerUnit + ep * convRate, newCogs, varRate);
+    const mc85 = cu * B.avgVol * 0.85;
+    const mc70 = cu * B.avgVol * 0.70;
+    return `<div class="scenario-card ${i === bestI ? 'best' : ''}">
+      ${i === bestI ? '<div class="sc-badge">BEST</div>' : '<div class="sc-badge">&nbsp;</div>'}
+      <div class="sc-title">${s.name}</div>
+      <div class="sc-price">+${fmt(s.p)}원</div>
+      <div class="sc-detail">${s.desc}</div>
+      <div class="sc-detail">단위 CM: ${sign(cu)}원</div>
+      <div class="sc-cm ${cls(mc85)}">85% 유지 -> 월 ${fmtW(mc85)}</div>
+      <div class="sc-detail">70% 유지 -> 월 ${fmtW(mc70)}</div>
+    </div>`;
+  }).join('');
+
+  // Detail table
+  const cols = [
+    { l: '현재(인상 전)', p: 0, cur: true },
+    { l: '가격 미조정', p: 0, cur: false },
+    { l: 'S1 +700', p: 700, cur: false },
+    { l: 'S2 +1,200', p: 1200, cur: false },
+    { l: 'S3 +2,000', p: 2000, cur: false },
+  ];
+  const getCM = (c) => {
+    const cogs2 = c.cur ? B.cogsPerUnit : newCogs;
+    const ep = effectivePrice(c.p || 0, SP, SD);
+    const rev2 = B.revPerUnit + ep * convRate;
+    return calcCM(rev2, cogs2, varRate);
+  };
+  const getRevUnit = (c) => B.revPerUnit + effectivePrice(c.p || 0, SP, SD) * convRate;
+  const rows = [
+    { l: '가중평균 인상분', fn: c => c.p > 0 ? '+' + fmt(Math.round(effectivePrice(c.p, SP, SD))) + '원' : '--' },
+    { l: '순매출/개', fn: c => fmt(Math.round(getRevUnit(c))) },
+    { l: '변동비/개 (' + (varRate*100).toFixed(0) + '%)', fn: c => fmt(Math.round(getRevUnit(c) * varRate)) },
+    { l: '원가/개', fn: c => fmt(c.cur ? B.cogsPerUnit : newCogs) },
+    { l: 'CM/개', fn: c => { const v = getCM(c); return `<span class="${cls(v)}">${sign(v)}원</span>`; }},
+    { l: '월간 물량 (85%)', fn: c => c.cur ? fmt(B.avgVol) : fmt(Math.round(B.avgVol * 0.85)) },
+    { l: '월간 CM', fn: c => { const v = getCM(c) * (c.cur ? B.avgVol : B.avgVol * 0.85); return `<span class="${cls(v)}">${fmtW(v)}</span>`; }},
+    { l: '연간 CM', fn: c => { const v = getCM(c) * (c.cur ? B.avgVol : B.avgVol * 0.85) * 12; return `<span class="${cls(v)}">${fmtW(v)}</span>`; }},
+  ];
+  document.getElementById('sc-tbody').innerHTML = rows.map(r =>
+    `<tr><td>${r.l}</td>${cols.map(c => `<td>${r.fn(c)}</td>`).join('')}</tr>`
+  ).join('');
+
+  // === Section 5: Sensitivity ===
+  document.getElementById('mx-var').textContent = (varRate * 100).toFixed(0);
+  document.getElementById('mx-conv').textContent = (convRate * 100).toFixed(0);
+  const pSteps = [0, 500, 700, 1000, 1200, 1500, 2000];
+  const vSteps = [100, 95, 90, 85, 80, 75, 70, 60, 50];
+  document.getElementById('mx-tbody').innerHTML = pSteps.map(p => {
+    const ep = effectivePrice(p, SP, SD);
+    const cu = calcCM(B.revPerUnit + ep * convRate, newCogs, varRate);
+    const isBE = Math.abs(cu) < 50;
+    return `<tr ${isBE ? 'class="highlight-row"' : ''}>
+      <td style="font-weight:600;text-align:left;">${p === 0 ? '미조정' : '+' + fmt(p) + '원'}</td>
+      ${vSteps.map(v => {
+        const cm = cu * B.avgVol * v / 100;
+        const man = Math.round(cm / 1e4);
+        let c2 = Math.abs(man) <= 3 ? 'matrix-be' : man > 0 ? 'matrix-pos' : 'matrix-neg';
+        return `<td class="${c2}">${man > 0 ? '+' : ''}${fmt(man)}</td>`;
+      }).join('')}
+    </tr>`;
+  }).join('');
+
+  // === Section 6: SKU 4-pack ===
+  [700, 1200, 2000].forEach((s, i) => {
+    const lp = Math.round((12500 + s) * 4 * (1 - SD) / 100) * 100;
+    const sp = Math.round((13500 + s) * 4 * (1 - SD) / 100) * 100;
+    document.getElementById('sku-l4-s' + (i + 1)).textContent = fmt(lp);
+    document.getElementById('sku-s4-s' + (i + 1)).textContent = fmt(sp);
+  });
+
+  // === Section 8: Recommendation ===
+  const s3cm = calcCM(B.revPerUnit + effectivePrice(2000, SP, SD) * convRate, newCogs, varRate);
+  const s3_85 = s3cm * B.avgVol * 0.85;
+  const s3_50 = s3cm * B.avgVol * 0.50;
+  const s2cm = calcCM(B.revPerUnit + effectivePrice(1200, SP, SD) * convRate, newCogs, varRate);
+  const s2_85 = s2cm * B.avgVol * 0.85;
+
+  let recHTML = '';
+  if (beExceedsMax) {
+    // 가격만으로 흑자 불가
+    recHTML = `
+      <div class="alert-box" style="border-radius:12px;border-left-width:6px;">
+        <strong style="font-size:16px;">변동비율 ${(varRate*100).toFixed(0)}% 기준: 가격 인상(+2,000원)만으로는 흑자 전환 불가</strong><br><br>
+        손익분기 필요 인상분 <strong>+${fmt(bePx)}원</strong>이 타사 한계선(+2,000원)을 초과합니다.
+      </div>
+      <div class="insight-box" style="margin-top:16px;">
+        <strong>대응 방향 (병행 필요):</strong><br><br>
+        1. <strong>가격 인상 +2,000원 (최대):</strong> 적자 축소 효과 (월 ${fmtW(s3_85 - noChgMonthly)} 개선)<br><br>
+        2. <strong>변동비 절감:</strong> 변동비율을 ${(varRate*100).toFixed(0)}% -> ${Math.floor((1 - newCogs / (B.revPerUnit + 2000*convRate)) * 100)}% 이하로 낮춰야 흑자 (물류 효율화, 수수료 협상, 프로모션 축소)<br><br>
+        3. <strong>대체 상품 검토:</strong> 대나무/재생펄프 패드로 원가 절감 + 가격 수용성 확보 -> 라이트 교체<br><br>
+        4. <strong>단품 폐지 + 4팩 전용:</strong> 운영 효율 개선으로 변동비 일부 절감<br><br>
+        5. <strong>변동비율 재확인 권장:</strong> P&L 역산 기준 28%와 차이 있음. 실제 개당 변동비 정밀 산출 필요.<br>
+        (슬라이더를 28%로 조정하면 손익분기 하락, +2,000원에서 월 ${fmtW(calcCM(B.revPerUnit + effectivePrice(2000, SP, SD)*convRate, newCogs, 0.28) * B.avgVol * 0.85)} 달성)
+      </div>
+    `;
+  } else {
+    recHTML = `
+      <div class="kpi-grid" style="grid-template-columns: 2fr 1fr;">
+        <div class="rec-card">
+          <div style="font-size:12px;color:#007aff;font-weight:700;margin-bottom:6px;">1순위 -- S3 최대 인상</div>
+          <div style="font-size:28px;font-weight:800;">단품 +2,000원</div>
+          <div style="font-size:13px;color:#666;margin-top:8px;">대형 14,500 / 표준형 15,500</div>
+          <div style="margin-top:12px;">
+            <span class="badge ${s3_85 >= 0 ? 'badge-green' : 'badge-red'}" style="font-size:13px;padding:4px 12px;">85% -> 월 ${fmtW(s3_85)}</span>
+            <span class="badge ${s3_50 >= 0 ? 'badge-green' : 'badge-red'}" style="font-size:13px;padding:4px 12px;">50% -> 월 ${fmtW(s3_50)}</span>
+          </div>
+        </div>
+        <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:center;">
+          <div class="label">2순위 -- S2</div>
+          <div class="value ${cls(s2_85)}">+1,200원</div>
+          <div class="sub">85% -> 월 ${fmtW(s2_85)}</div>
+        </div>
+      </div>
+      <div class="insight-box" style="margin-top:16px;">
+        <strong>핵심 결론:</strong><br><br>
+        1. <strong>손익분기 최소 인상: +${fmt(bePx)}원</strong><br><br>
+        2. <strong>S3(+2,000원)이 최적:</strong> 타사 한계선 내 최대 마진 확보<br><br>
+        3. <strong>모니터링:</strong> 인상 후 2~4주 물량 추적. 70% 이상 유지 시 S3 지속, 이하 시 S2 조정
+      </div>
+    `;
+  }
+  document.getElementById('rec-area').innerHTML = recHTML;
+
+  // 세트 플레이 분석 업데이트
+  updateSetPlay();
+}
+
+// Init
+['sl-var','sl-conv','sl-price','sl-vol'].forEach(id =>
+  document.getElementById(id).addEventListener('input', update)
+);
+update();
+</script>
+</body>
+</html>
